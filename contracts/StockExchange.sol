@@ -28,7 +28,7 @@ contract StockExchange{
     int assetcount;
     int transcount;
     
-    event error(string);
+    
     event TransactionLog(string);
     
 
@@ -49,21 +49,14 @@ contract StockExchange{
     }
     
     // To register/add asset 
-    function registerAsset(string memory _id,int256 _price,int256 _quantity)public  payable  returns(bool)
+    function registerAsset(string memory _id,int256 _price,int256 _quantity)public   returns(bool)
     {
-        if(getAssetIndex(_id)>=0)
-        {
-            emit error("Asset already exists");
-            revert();
-        }
-        
-        else{
-            
+        require(getAssetIndex(_id)<0,"Asset already exists");
         assets[assetcount]=Asset(msg.sender,_id,_price,_quantity);
         assetstore[_id]=assetcount;
         assetcount++;
         return true;
-        }
+        
         
     }
     
@@ -80,39 +73,33 @@ contract StockExchange{
      
     }
     
-    function transaction(string memory _source, string memory _target,int256 _quantity)public payable returns(bool)
+    function transaction(string memory _source, string memory _target,int256 _quantity)public  returns(bool)
     {
         int sid=getAssetIndex(_source);
         int  tid=getAssetIndex(_target);
-       if(sid == -1 || tid == -1)
-       {
-           emit error("Target or Source asset does not exists");
-           revert();
-          
-       }
-       else{
-           
         
+      
+           require(sid >=0 && tid >= 0,"Target or Source asset does not exists");
            if((assets[tid].asset_quantity - _quantity) >=0)
-           {
-                
-                transactions[transcount]=Transaction(transcount,_source,_target,now,assets[tid].asset_price,_quantity,1);
-                assets[tid].asset_quantity -=_quantity;
-                emit TransactionLog("Transaction successful");
-        
-                transcount++;
-                return true;
-           }
-           else
-           {
-                transactions[transcount]=Transaction(transcount,_source,_target,now,assets[tid].asset_price,_quantity,0);
-                emit TransactionLog("Transaction failed");
-               
-                transcount++;
-                //revert(); If we need to completely reject the transaction
-                return false;
-           }
-       }
+               {
+                    
+                    transactions[transcount]=Transaction(transcount,_source,_target,now,assets[tid].asset_price,_quantity,1);
+                    assets[tid].asset_quantity -=_quantity;
+                    emit TransactionLog("Transaction successful");
+            
+                    transcount++;
+                    return true;
+               }
+               else
+               {
+                    transactions[transcount]=Transaction(transcount,_source,_target,now,assets[tid].asset_price,_quantity,0);
+                    emit TransactionLog("Transaction failed");
+                   
+                    transcount++;
+                    //revert(); If we need to completely reject the transaction
+                    return false;
+               }
+           
       }
       
         function getTransactionDetails(int256 _transactionid)public view  returns(string memory,string memory,uint256,int256,int256,int)
@@ -122,10 +109,7 @@ contract StockExchange{
                    {
                       return(transactions[_transactionid].source,transactions[_transactionid].target,transactions[_transactionid].timestamp,transactions[_transactionid].price,transactions[_transactionid].quantity,transactions[_transactionid].transaction_state);
                    }
-                  
                  
-               
-         
     }
     
 }
