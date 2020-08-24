@@ -22,9 +22,9 @@ contract StockExchange{
     
     
     mapping(int => Transaction)transactions;
-  
+    
     mapping (int => Asset)assets;
-    string[] public assetstore;
+    mapping (string => int)assetstore;
     int assetcount;
     int transcount;
     
@@ -35,18 +35,17 @@ contract StockExchange{
     //To retrieve the index of asset
     function getAssetIndex(string memory _asset)public view  returns(int)
     {
-        for(int i=0;i<assetcount;i++)
-           
-           {
-                if(keccak256(abi.encodePacked(assets[i].asset_id))==keccak256(abi.encodePacked(_asset)))
-               {
-                   return i;
-               }
-              
-               
-           }
-           return -1;
-         
+        
+            int i=assetstore[_asset];
+            if(keccak256(abi.encodePacked(assets[i].asset_id))==keccak256(abi.encodePacked(_asset)))
+            {
+                return i; 
+            }
+            else{
+                return -1;
+            }
+            
+        
     }
     
     // To register/add asset 
@@ -61,7 +60,7 @@ contract StockExchange{
         else{
             
         assets[assetcount]=Asset(msg.sender,_id,_price,_quantity);
-        assetstore.push(_id);
+        assetstore[_id]=assetcount;
         assetcount++;
         return true;
         }
@@ -72,19 +71,13 @@ contract StockExchange{
     //To retrieve the asset details
      function getAsset(string memory _asset)public view  returns(address,int256,int256)
     {
-        for(int i=0;i<assetcount;i++)
-           
-           {
-                if(keccak256(abi.encodePacked(assets[i].asset_id))==keccak256(abi.encodePacked(_asset)))
-               {
-                  return(assets[i].asset_owner,assets[i].asset_quantity,assets[i].asset_price);
-               }
-              
-              
-             
-           }
-          
-         
+                int i=getAssetIndex(_asset);
+                if(i>=0)
+                {
+                     return(assets[i].asset_owner,assets[i].asset_quantity,assets[i].asset_price);
+                }
+               
+     
     }
     
     function transaction(string memory _source, string memory _target,int256 _quantity)public payable returns(bool)
@@ -106,6 +99,7 @@ contract StockExchange{
                 transactions[transcount]=Transaction(transcount,_source,_target,now,assets[tid].asset_price,_quantity,1);
                 assets[tid].asset_quantity -=_quantity;
                 emit TransactionLog("Transaction successful");
+        
                 transcount++;
                 return true;
            }
@@ -113,6 +107,7 @@ contract StockExchange{
            {
                 transactions[transcount]=Transaction(transcount,_source,_target,now,assets[tid].asset_price,_quantity,0);
                 emit TransactionLog("Transaction failed");
+               
                 transcount++;
                 //revert(); If we need to completely reject the transaction
                 return false;
@@ -120,19 +115,16 @@ contract StockExchange{
        }
       }
       
-        function getTransactionDetails(uint _transactionid)public view  returns(string memory,string memory,uint256,int256,int256,int)
+        function getTransactionDetails(int256 _transactionid)public view  returns(string memory,string memory,uint256,int256,int256,int)
           {
-            for(int i=0;i<transcount;i++)
                
-               {
-                    if(keccak256(abi.encodePacked(transactions[i].transaction_id))==keccak256(abi.encodePacked(_transactionid)))
+                 if(keccak256(abi.encodePacked(transactions[_transactionid].transaction_id))==keccak256(abi.encodePacked(_transactionid)))
                    {
-                      return(transactions[i].source,transactions[i].target,transactions[i].timestamp,transactions[i].price,transactions[i].quantity,transactions[i].transaction_state);
+                      return(transactions[_transactionid].source,transactions[_transactionid].target,transactions[_transactionid].timestamp,transactions[_transactionid].price,transactions[_transactionid].quantity,transactions[_transactionid].transaction_state);
                    }
                   
                  
-               }
-              
+               
          
     }
     
